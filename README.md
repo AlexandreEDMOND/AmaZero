@@ -3,8 +3,8 @@
 
 ## Ce qui est fait (phase 1)
 - Logique du jeu en Python : état immutable, génération de coups légaux, application de coups, partie aléatoire exportable.
-- UI web locale statique (HTML/CSS/JS) : duel live (IA vs IA) et humain vs IA, contrôles play/pause, reset, vitesse ; animation simple déplacement + flèche.
-- Choix du mode IA (aléatoire ou heuristique simple) dans l’interface.
+- UI web locale statique (HTML/CSS/JS) : duel live humain vs IA, reset ; animation simple déplacement + flèche.
+- Choix du mode IA (aléatoire ou heuristique simple) et de la couleur du joueur dans l’interface.
 - Onglet “Stats IA” : matchs batch rapides pour comparer les IA et afficher le win rate.
 - Script utilitaire : génération d’une partie JSON (`scripts/generate_random_game.py`) si besoin.
 - Tests unitaires sur règles, génération de coups, progression d’une partie (`tests/test_game.py`).

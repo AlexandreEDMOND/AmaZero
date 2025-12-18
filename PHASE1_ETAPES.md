@@ -18,7 +18,7 @@
    - Deux joueurs aleatoires qui enchainent des coups jusqu'a fin de partie.
    - UI web locale (HTML/JS/CSS statique) servie par `python -m http.server` pour rester 100% reproductible.
    - Vue plateau 7x7 en grille claire, amazones contrastees, fleches visibles; palette simple (fond clair, cases alternees, surbrillance des derniers coups).
-   - Controls: lecture/pause, reset partie; vitesse ajustable.
+   - Controls: reset partie.
    - UX soignee: transitions douces pour les deplacements, legende minimale, responsive desktop/tablette.
    - Mode humain vs IA + selection du camp.
    - Choix IA aleatoire ou heuristique simple.

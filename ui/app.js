@@ -13,11 +13,8 @@ const DIRS = [
 
 const boardEl = document.getElementById("board");
 const metaEl = document.getElementById("meta");
-const btnPlay = document.getElementById("play-pause");
 const btnReset = document.getElementById("reset");
-const speedInput = document.getElementById("speed");
 const modeSelect = document.getElementById("mode");
-const gameModeSelect = document.getElementById("game-mode");
 const humanSideSelect = document.getElementById("human-side");
 const tabButtons = document.querySelectorAll(".tab-button");
 const tabContents = document.querySelectorAll(".tab-content");
@@ -37,13 +34,9 @@ const statsProgressEl = document.getElementById("stats-progress");
 
 let state = initialState();
 let lastMove = null;
-let playing = false;
-let timer = null;
-let delay = Number(speedInput?.value || 700);
 let turn = 0;
 let animating = false;
 let mode = modeSelect?.value || "random";
-let gameMode = gameModeSelect?.value || "ai";
 let humanSide = humanSideSelect?.value || "W";
 let selection = { origin: null, target: null };
 let cachedMoves = null;
@@ -218,9 +211,12 @@ function render() {
     boardEl.appendChild(div);
   });
   const modeLabel = mode === "heuristic" ? "heuristique" : "aleatoire";
-  const humanLabel = gameMode === "human" ? ` — humain: ${humanSide}` : "";
-  const turnLabel = humanTurn ? "A toi de jouer" : `Tour ${turn} — joueur: ${state.player}`;
-  metaEl.textContent = `${turnLabel} — mode: ${modeLabel}${humanLabel}`;
+  if (humanTurn && moves.length === 0) {
+    metaEl.textContent = `Fin: ${state.player} bloque — mode: ${modeLabel} — humain: ${humanSide}`;
+    return;
+  }
+  const turnLabel = humanTurn ? "A toi de jouer" : "IA en cours";
+  metaEl.textContent = `${turnLabel} — mode: ${modeLabel} — humain: ${humanSide}`;
 }
 
 function isHighlight(mv, row, col) {
@@ -231,15 +227,16 @@ function isHighlight(mv, row, col) {
   );
 }
 
-function tick() {
-  if (!playing) return;
+function triggerAiMove() {
   if (animating) return;
   if (isHumanTurn()) return;
+  if (turn >= MAX_TURNS) {
+    metaEl.textContent = "Fin: limite de tours atteinte";
+    return;
+  }
   const mv = chooseMove(state);
-  if (!mv || turn >= MAX_TURNS) {
-    playing = false;
-    btnPlay.textContent = "Jouer";
-    metaEl.textContent = mv ? "Fin: limite de tours atteinte" : `Fin: ${state.player} bloque`;
+  if (!mv) {
+    metaEl.textContent = `Fin: ${state.player} bloque`;
     return;
   }
   animateMove(mv, state.player, () => {
@@ -249,45 +246,22 @@ function tick() {
     turn += 1;
     render();
     animateArrow(mv);
-    timer = setTimeout(tick, delay);
   });
 }
 
-function playPause() {
-  playing = !playing;
-  btnPlay.textContent = playing ? "Pause" : "Jouer";
-  if (playing) {
-    clearTimeout(timer);
-    timer = setTimeout(tick, delay);
-  } else {
-    clearTimeout(timer);
-  }
-}
-
 function reset() {
-  playing = false;
-  clearTimeout(timer);
-  btnPlay.textContent = "Jouer";
   state = initialState();
   lastMove = null;
   turn = 0;
   selection = { origin: null, target: null };
   cachedMoves = null;
   render();
-}
-
-function adjustSpeed(e) {
-  delay = Number(e.target.value);
+  setTimeout(triggerAiMove, 0);
 }
 
 function adjustAiMode(e) {
   mode = e.target.value;
   render();
-}
-
-function adjustGameMode(e) {
-  gameMode = e.target.value;
-  reset();
 }
 
 function adjustHumanSide(e) {
@@ -296,7 +270,7 @@ function adjustHumanSide(e) {
 }
 
 function isHumanTurn() {
-  return gameMode === "human" && state.player === humanSide;
+  return state.player === humanSide;
 }
 
 function setActiveTab(tabName) {
@@ -371,7 +345,7 @@ function startStats() {
   const games = Number(statsGamesInput.value || 0);
   if (!Number.isFinite(games) || games <= 0) return;
   statsRunning = true;
-  statsTotal = Math.min(games, 500);
+  statsTotal = games;
   statsPlayed = 0;
   statsWins = { W: 0, B: 0, D: 0 };
   updateStatsDisplay();
@@ -466,10 +440,7 @@ function onBoardClick(e) {
     turn += 1;
     render();
     animateArrow(move);
-    if (playing) {
-      clearTimeout(timer);
-      timer = setTimeout(tick, delay);
-    }
+    setTimeout(triggerAiMove, 0);
   }
 }
 
@@ -535,11 +506,8 @@ function cellEl([r, c]) {
   return boardEl.children[idx];
 }
 
-btnPlay?.addEventListener("click", playPause);
 btnReset?.addEventListener("click", reset);
-speedInput?.addEventListener("input", adjustSpeed);
 modeSelect?.addEventListener("change", adjustAiMode);
-gameModeSelect?.addEventListener("change", adjustGameMode);
 humanSideSelect?.addEventListener("change", adjustHumanSide);
 boardEl?.addEventListener("click", onBoardClick);
 tabButtons.forEach((btn) => {
@@ -550,3 +518,4 @@ statsResetBtn?.addEventListener("click", resetStats);
 
 reset();
 resetStats();
+setActiveTab("stats");

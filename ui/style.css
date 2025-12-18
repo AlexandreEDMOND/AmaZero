@@ -164,6 +164,20 @@ input[type="range"] {
   flex-wrap: wrap;
 }
 
+.live-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  align-items: end;
+  margin-bottom: 16px;
+}
+
+.live-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .tab-button {
   border: 1px solid var(--outline);
   background: rgba(255, 255, 255, 0.04);

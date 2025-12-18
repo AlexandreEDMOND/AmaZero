@@ -11,48 +11,42 @@
     <header class="hero">
       <div>
         <p class="eyebrow">Phase 1 · Variant 7x7</p>
-        <h1>Amazero — Duel aleatoire en direct</h1>
-        <p class="lede">Deux IA aleatoires jouent en live (7x7, 2 amazones par camp). Pas de parties pre-enregistrees.</p>
-        <div class="actions">
-          <button id="play-pause" class="btn primary">Jouer</button>
-          <button id="reset" class="btn ghost">Reset</button>
-        </div>
-      </div>
-      <div class="panel">
-        <div class="label">Vitesse</div>
-        <input id="speed" type="range" min="200" max="1400" step="100" value="700">
-        <div class="label small">Glisser pour accelerer ou ralentir la lecture.</div>
-        <div class="label spacer">Mode IA</div>
-        <select id="mode" class="select">
-          <option value="random">Aleatoire</option>
-          <option value="heuristic">Heuristique simple</option>
-        </select>
-        <div class="label small">Choisit le type de coups pour les deux joueurs.</div>
-        <div class="label spacer">Mode de jeu</div>
-        <select id="game-mode" class="select">
-          <option value="ai">IA vs IA</option>
-          <option value="human">Humain vs IA</option>
-        </select>
-        <div class="label spacer">Camp humain</div>
-        <select id="human-side" class="select">
-          <option value="W">Blanc</option>
-          <option value="B">Noir</option>
-        </select>
+        <h1>AmaZero</h1>
+        <p class="lede">Prototype local pour jouer et comparer des IA sur le jeu des Amazones.</p>
       </div>
     </header>
 
     <main class="layout">
       <div class="tabs">
-        <button class="tab-button active" data-tab="live">Duel live</button>
-        <button class="tab-button" data-tab="stats">Stats IA</button>
+        <button class="tab-button active" data-tab="stats">Stats IA</button>
+        <button class="tab-button" data-tab="live">Duel live</button>
       </div>
-      <section id="live" class="tab-content active">
+      <section id="live" class="tab-content">
         <div class="board-shell">
+          <div class="live-controls">
+            <div>
+              <div class="label">Mode IA</div>
+              <select id="mode" class="select">
+                <option value="random">Aleatoire</option>
+                <option value="heuristic">Heuristique simple</option>
+              </select>
+            </div>
+            <div>
+              <div class="label">Camp humain</div>
+              <select id="human-side" class="select">
+                <option value="W">Blanc</option>
+                <option value="B">Noir</option>
+              </select>
+            </div>
+            <div class="live-actions">
+              <button id="reset" class="btn ghost">Reset</button>
+            </div>
+          </div>
           <div id="board" class="board"></div>
           <div id="meta" class="meta"></div>
         </div>
       </section>
-      <section id="stats" class="tab-content">
+      <section id="stats" class="tab-content active">
         <div class="board-shell">
           <h2>Matchs batch et win rate</h2>
           <p class="lede">Simule des matchs rapides sans animation pour comparer les IA.</p>
@@ -73,7 +67,7 @@
             </div>
             <div>
               <div class="label">Nombre de parties</div>
-              <input id="stats-games" class="input" type="number" min="1" max="500" value="50">
+              <input id="stats-games" class="input" type="number" min="1" value="50">
             </div>
             <div class="stats-actions">
               <button id="stats-run" class="btn primary">Lancer</button>
