@@ -3,7 +3,9 @@
 
 ## Ce qui est fait (phase 1)
 - Logique du jeu en Python : état immutable, génération de coups légaux, application de coups, partie aléatoire exportable.
-- UI web locale statique (HTML/CSS/JS) : duel live de deux IA random, contrôles play/pause, reset, vitesse ; animation simple déplacement + flèche.
+- UI web locale statique (HTML/CSS/JS) : duel live (IA vs IA) et humain vs IA, contrôles play/pause, reset, vitesse ; animation simple déplacement + flèche.
+- Choix du mode IA (aléatoire ou heuristique simple) dans l’interface.
+- Onglet “Stats IA” : matchs batch rapides pour comparer les IA et afficher le win rate.
 - Script utilitaire : génération d’une partie JSON (`scripts/generate_random_game.py`) si besoin.
 - Tests unitaires sur règles, génération de coups, progression d’une partie (`tests/test_game.py`).
 
@@ -14,14 +16,16 @@ uv run python -m unittest discover -s tests -p "test*.py" -v
 
 # Lancer l’UI web (serveur statique)
 uv run python -m http.server 8000 -d ui
-# puis ouvrir http://localhost:8000 et cliquer sur "Jouer"
+# puis ouvrir http://localhost:8000
+# - Onglet "Duel live" : choisir le mode IA ou jouer en humain vs IA.
+# - Onglet "Stats IA" : lancer des matchs batch pour le win rate.
 
 # (Optionnel) Regénérer un enregistrement JSON
 uv run python scripts/generate_random_game.py
 ```
 
 ## TODO (prochaines étapes)
-- Ajouter heuristique/évaluation et moteur de recherche (alpha-beta ou MCTS CPU).
+- Ajouter moteur de recherche (alpha-beta ou MCTS CPU).
 - Renforcer le générateur de coups (profiling, optimisations ciblées si besoin).
 - Hooks d’API/CLI pour jouer contre le moteur et lancer des matchs batch.
 - Scénarios de non-régression (positions fixes + hashes) et benchmarks simples (nodes/s, taux de victoire vs bots basiques).

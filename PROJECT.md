@@ -55,3 +55,8 @@ The engine will be evaluated by:
 - A player loses when they have no legal moves
 
 Rules must be implemented exactly.
+
+## Current Implementation (Phase 1 progress)
+- 7x7 variant with 2 amazons per side (local prototype).
+- Web UI: live duel (AI vs AI), human vs AI, speed controls, and mode selection (random or simple heuristic).
+- Stats tab: batch matches to estimate win rate for AI matchups.

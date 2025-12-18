@@ -18,11 +18,14 @@
    - Deux joueurs aleatoires qui enchainent des coups jusqu'a fin de partie.
    - UI web locale (HTML/JS/CSS statique) servie par `python -m http.server` pour rester 100% reproductible.
    - Vue plateau 7x7 en grille claire, amazones contrastees, fleches visibles; palette simple (fond clair, cases alternees, surbrillance des derniers coups).
-   - Controls: lecture/pause, pas-a-pas avant/arriere, reset partie; vitesse ajustable.
+   - Controls: lecture/pause, reset partie; vitesse ajustable.
    - UX soignee: transitions douces pour les deplacements, legende minimale, responsive desktop/tablette.
+   - Mode humain vs IA + selection du camp.
+   - Choix IA aleatoire ou heuristique simple.
+   - Onglet "Stats IA" pour lancer des matchs batch et voir le win rate.
 
 5. **Evaluation et heuristiques de base**
-   - Implementer une heuristique simple et deterministe (libertes accessibles, controle de zones).
+   - Implementer une heuristique simple et deterministe (libertes accessibles, controle de zones). (fait: mobilite simple)
    - Prevoir une evaluation neutre pour MCTS si choisie.
 
 6. **Moteur de recherche**
@@ -39,7 +42,7 @@
    - Tests de non-regression sur des positions fixes avec hashes deterministes.
 
 9. **Benchmarks et evaluation initiale**
-   - Scripts de duel (moteur vs aleatoire / heuristique simple) pour mesurer le win rate.
+   - Scripts de duel (moteur vs aleatoire / heuristique simple) pour mesurer le win rate. (fait: batch dans l'UI)
    - Collecter des stats (nodes/s, branching) pour guider les optimisations futures.
 
 10. **Documentation**

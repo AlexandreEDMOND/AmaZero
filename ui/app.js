@@ -16,6 +16,24 @@ const metaEl = document.getElementById("meta");
 const btnPlay = document.getElementById("play-pause");
 const btnReset = document.getElementById("reset");
 const speedInput = document.getElementById("speed");
+const modeSelect = document.getElementById("mode");
+const gameModeSelect = document.getElementById("game-mode");
+const humanSideSelect = document.getElementById("human-side");
+const tabButtons = document.querySelectorAll(".tab-button");
+const tabContents = document.querySelectorAll(".tab-content");
+const statsWhiteSelect = document.getElementById("stats-white");
+const statsBlackSelect = document.getElementById("stats-black");
+const statsGamesInput = document.getElementById("stats-games");
+const statsRunBtn = document.getElementById("stats-run");
+const statsResetBtn = document.getElementById("stats-reset");
+const statsWhiteWin = document.getElementById("stats-white-win");
+const statsBlackWin = document.getElementById("stats-black-win");
+const statsDrawWin = document.getElementById("stats-draw-win");
+const statsWhiteCount = document.getElementById("stats-white-count");
+const statsBlackCount = document.getElementById("stats-black-count");
+const statsDrawCount = document.getElementById("stats-draw-count");
+const statsTotalEl = document.getElementById("stats-total");
+const statsProgressEl = document.getElementById("stats-progress");
 
 let state = initialState();
 let lastMove = null;
@@ -24,6 +42,15 @@ let timer = null;
 let delay = Number(speedInput?.value || 700);
 let turn = 0;
 let animating = false;
+let mode = modeSelect?.value || "random";
+let gameMode = gameModeSelect?.value || "ai";
+let humanSide = humanSideSelect?.value || "W";
+let selection = { origin: null, target: null };
+let cachedMoves = null;
+let statsRunning = false;
+let statsTotal = 0;
+let statsPlayed = 0;
+let statsWins = { W: 0, B: 0, D: 0 };
 
 function initialState() {
   const board = Array.from({ length: SIZE }, () => Array(SIZE).fill("."));
@@ -74,6 +101,67 @@ function legalMoves(st) {
   return moves;
 }
 
+function getLegalMoves() {
+  if (!cachedMoves) cachedMoves = legalMoves(state);
+  return cachedMoves;
+}
+
+function keyOf([r, c]) {
+  return `${r},${c}`;
+}
+
+function mobility(board, player) {
+  let count = 0;
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      if (board[r][c] !== player) continue;
+      for (const [dr, dc] of DIRS) {
+        count += ray(board, r, c, dr, dc).length;
+      }
+    }
+  }
+  return count;
+}
+
+function pickHeuristicMove(st, moves) {
+  if (!moves.length) return null;
+  const opponent = st.player === "W" ? "B" : "W";
+  let bestScore = -Infinity;
+  let bestMoves = [];
+  for (const mv of moves) {
+    const nextBoard = cloneBoard(st.board);
+    nextBoard[mv.from[0]][mv.from[1]] = ".";
+    nextBoard[mv.to[0]][mv.to[1]] = st.player;
+    nextBoard[mv.arrow[0]][mv.arrow[1]] = "X";
+    const score = mobility(nextBoard, st.player) - mobility(nextBoard, opponent);
+    if (score > bestScore) {
+      bestScore = score;
+      bestMoves = [mv];
+    } else if (score === bestScore) {
+      bestMoves.push(mv);
+    }
+  }
+  return bestMoves[Math.floor(Math.random() * bestMoves.length)];
+}
+
+function chooseMove(st) {
+  const moves = getLegalMoves();
+  if (!moves.length) return null;
+  if (mode === "heuristic") {
+    return pickHeuristicMove(st, moves);
+  }
+  return moves[Math.floor(Math.random() * moves.length)];
+}
+
+function chooseMoveForMode(st, modeType) {
+  const moves = legalMoves(st);
+  if (!moves.length) return null;
+  if (modeType === "heuristic") {
+    return pickHeuristicMove(st, moves);
+  }
+  return moves[Math.floor(Math.random() * moves.length)];
+}
+
 function applyMove(st, mv) {
   const nextBoard = cloneBoard(st.board);
   nextBoard[mv.from[0]][mv.from[1]] = ".";
@@ -87,6 +175,9 @@ function render() {
   boardEl.innerHTML = "";
   boardEl.style.gridTemplateColumns = `repeat(${SIZE}, 1fr)`;
   const flat = state.board.flat();
+  const humanTurn = isHumanTurn();
+  const moves = humanTurn ? getLegalMoves() : [];
+  const highlights = computeHighlights(moves);
   flat.forEach((cell, i) => {
     const div = document.createElement("div");
     div.className = "cell";
@@ -94,6 +185,21 @@ function render() {
     const col = i % SIZE;
     if (lastMove && isHighlight(lastMove, row, col)) {
       div.classList.add("highlight");
+    }
+    if (humanTurn && highlights.selectable.has(keyOf([row, col]))) {
+      div.classList.add("selectable");
+    }
+    if (selection.origin && selection.origin[0] === row && selection.origin[1] === col) {
+      div.classList.add("selected");
+    }
+    if (selection.target && selection.target[0] === row && selection.target[1] === col) {
+      div.classList.add("selected");
+    }
+    if (humanTurn && highlights.targets.has(keyOf([row, col]))) {
+      div.classList.add("target");
+    }
+    if (humanTurn && highlights.arrows.has(keyOf([row, col]))) {
+      div.classList.add("arrow-target");
     }
     if (cell !== ".") {
       const piece = document.createElement("div");
@@ -111,7 +217,10 @@ function render() {
     }
     boardEl.appendChild(div);
   });
-  metaEl.textContent = `Tour ${turn} — joueur: ${state.player}`;
+  const modeLabel = mode === "heuristic" ? "heuristique" : "aleatoire";
+  const humanLabel = gameMode === "human" ? ` — humain: ${humanSide}` : "";
+  const turnLabel = humanTurn ? "A toi de jouer" : `Tour ${turn} — joueur: ${state.player}`;
+  metaEl.textContent = `${turnLabel} — mode: ${modeLabel}${humanLabel}`;
 }
 
 function isHighlight(mv, row, col) {
@@ -125,17 +234,18 @@ function isHighlight(mv, row, col) {
 function tick() {
   if (!playing) return;
   if (animating) return;
-  const moves = legalMoves(state);
-  if (!moves.length || turn >= MAX_TURNS) {
+  if (isHumanTurn()) return;
+  const mv = chooseMove(state);
+  if (!mv || turn >= MAX_TURNS) {
     playing = false;
     btnPlay.textContent = "Jouer";
-    metaEl.textContent = moves.length ? "Fin: limite de tours atteinte" : `Fin: ${state.player} bloque`;
+    metaEl.textContent = mv ? "Fin: limite de tours atteinte" : `Fin: ${state.player} bloque`;
     return;
   }
-  const mv = moves[Math.floor(Math.random() * moves.length)];
   animateMove(mv, state.player, () => {
     lastMove = mv;
     state = applyMove(state, mv);
+    cachedMoves = null;
     turn += 1;
     render();
     animateArrow(mv);
@@ -161,11 +271,206 @@ function reset() {
   state = initialState();
   lastMove = null;
   turn = 0;
+  selection = { origin: null, target: null };
+  cachedMoves = null;
   render();
 }
 
 function adjustSpeed(e) {
   delay = Number(e.target.value);
+}
+
+function adjustAiMode(e) {
+  mode = e.target.value;
+  render();
+}
+
+function adjustGameMode(e) {
+  gameMode = e.target.value;
+  reset();
+}
+
+function adjustHumanSide(e) {
+  humanSide = e.target.value;
+  reset();
+}
+
+function isHumanTurn() {
+  return gameMode === "human" && state.player === humanSide;
+}
+
+function setActiveTab(tabName) {
+  tabButtons.forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.tab === tabName);
+  });
+  tabContents.forEach((section) => {
+    section.classList.toggle("active", section.id === tabName);
+  });
+}
+
+function simulateGame(whiteMode, blackMode, maxTurns = MAX_TURNS) {
+  let simState = initialState();
+  let turns = 0;
+  while (turns < maxTurns) {
+    const modeType = simState.player === "W" ? whiteMode : blackMode;
+    const mv = chooseMoveForMode(simState, modeType);
+    if (!mv) {
+      return simState.player === "W" ? "B" : "W";
+    }
+    simState = applyMove(simState, mv);
+    turns += 1;
+  }
+  return "D";
+}
+
+function updateStatsDisplay() {
+  const total = Math.max(statsPlayed, 1);
+  const whitePct = Math.round((statsWins.W / total) * 100);
+  const blackPct = Math.round((statsWins.B / total) * 100);
+  const drawPct = Math.round((statsWins.D / total) * 100);
+  statsWhiteWin.textContent = `${whitePct}%`;
+  statsBlackWin.textContent = `${blackPct}%`;
+  statsDrawWin.textContent = `${drawPct}%`;
+  statsWhiteCount.textContent = `${statsWins.W} victoires`;
+  statsBlackCount.textContent = `${statsWins.B} victoires`;
+  statsDrawCount.textContent = `${statsWins.D} nuls`;
+  statsTotalEl.textContent = `${statsPlayed}`;
+  statsProgressEl.textContent = `${statsPlayed} / ${statsTotal}`;
+}
+
+function resetStats() {
+  statsRunning = false;
+  statsTotal = 0;
+  statsPlayed = 0;
+  statsWins = { W: 0, B: 0, D: 0 };
+  updateStatsDisplay();
+}
+
+function runStatsBatch() {
+  if (!statsRunning) return;
+  const remaining = statsTotal - statsPlayed;
+  if (remaining <= 0) {
+    statsRunning = false;
+    return;
+  }
+  const batch = Math.min(10, remaining);
+  const whiteMode = statsWhiteSelect.value;
+  const blackMode = statsBlackSelect.value;
+  for (let i = 0; i < batch; i += 1) {
+    const result = simulateGame(whiteMode, blackMode);
+    if (result === "W") statsWins.W += 1;
+    else if (result === "B") statsWins.B += 1;
+    else statsWins.D += 1;
+    statsPlayed += 1;
+  }
+  updateStatsDisplay();
+  setTimeout(runStatsBatch, 0);
+}
+
+function startStats() {
+  const games = Number(statsGamesInput.value || 0);
+  if (!Number.isFinite(games) || games <= 0) return;
+  statsRunning = true;
+  statsTotal = Math.min(games, 500);
+  statsPlayed = 0;
+  statsWins = { W: 0, B: 0, D: 0 };
+  updateStatsDisplay();
+  runStatsBatch();
+}
+
+function computeHighlights(moves) {
+  const selectable = new Set();
+  const targets = new Set();
+  const arrows = new Set();
+  if (!moves.length) return { selectable, targets, arrows };
+  if (!selection.origin) {
+    for (const mv of moves) {
+      selectable.add(keyOf(mv.from));
+    }
+    return { selectable, targets, arrows };
+  }
+  if (!selection.target) {
+    for (const mv of moves) {
+      if (mv.from[0] === selection.origin[0] && mv.from[1] === selection.origin[1]) {
+        targets.add(keyOf(mv.to));
+      }
+    }
+    return { selectable, targets, arrows };
+  }
+  for (const mv of moves) {
+    if (
+      mv.from[0] === selection.origin[0] &&
+      mv.from[1] === selection.origin[1] &&
+      mv.to[0] === selection.target[0] &&
+      mv.to[1] === selection.target[1]
+    ) {
+      arrows.add(keyOf(mv.arrow));
+    }
+  }
+  return { selectable, targets, arrows };
+}
+
+function onBoardClick(e) {
+  if (!isHumanTurn()) return;
+  const cell = e.target.closest(".cell");
+  if (!cell) return;
+  const index = Array.from(boardEl.children).indexOf(cell);
+  const r = Math.floor(index / SIZE);
+  const c = index % SIZE;
+  const moves = getLegalMoves();
+  if (!selection.origin) {
+    if (state.board[r][c] === state.player) {
+      selection.origin = [r, c];
+      render();
+    }
+    return;
+  }
+  if (!selection.target) {
+    if (selection.origin[0] === r && selection.origin[1] === c) {
+      selection.origin = null;
+      render();
+      return;
+    }
+    if (state.board[r][c] === state.player) {
+      selection.origin = [r, c];
+      render();
+      return;
+    }
+    const hasTarget = moves.some(
+      (mv) =>
+        mv.from[0] === selection.origin[0] &&
+        mv.from[1] === selection.origin[1] &&
+        mv.to[0] === r &&
+        mv.to[1] === c
+    );
+    if (hasTarget) {
+      selection.target = [r, c];
+      render();
+    }
+    return;
+  }
+  const move = moves.find(
+    (mv) =>
+      mv.from[0] === selection.origin[0] &&
+      mv.from[1] === selection.origin[1] &&
+      mv.to[0] === selection.target[0] &&
+      mv.to[1] === selection.target[1] &&
+      mv.arrow[0] === r &&
+      mv.arrow[1] === c
+  );
+  if (move) {
+    lastMove = move;
+    state = applyMove(state, move);
+    cachedMoves = null;
+    selection = { origin: null, target: null };
+    turn += 1;
+    render();
+    animateArrow(move);
+    if (playing) {
+      clearTimeout(timer);
+      timer = setTimeout(tick, delay);
+    }
+  }
 }
 
 function animateMove(mv, color, onDone) {
@@ -233,5 +538,15 @@ function cellEl([r, c]) {
 btnPlay?.addEventListener("click", playPause);
 btnReset?.addEventListener("click", reset);
 speedInput?.addEventListener("input", adjustSpeed);
+modeSelect?.addEventListener("change", adjustAiMode);
+gameModeSelect?.addEventListener("change", adjustGameMode);
+humanSideSelect?.addEventListener("change", adjustHumanSide);
+boardEl?.addEventListener("click", onBoardClick);
+tabButtons.forEach((btn) => {
+  btn.addEventListener("click", () => setActiveTab(btn.dataset.tab));
+});
+statsRunBtn?.addEventListener("click", startStats);
+statsResetBtn?.addEventListener("click", resetStats);
 
 reset();
+resetStats();

@@ -118,6 +118,10 @@ h2, h3 {
   margin-bottom: 6px;
 }
 
+.label.spacer {
+  margin-top: 12px;
+}
+
 .label.small {
   font-size: 12px;
   color: var(--muted);
@@ -127,11 +131,61 @@ input[type="range"] {
   width: 220px;
 }
 
+.input {
+  width: 220px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--outline);
+  background: #0b1220;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.select {
+  width: 220px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--outline);
+  background: #0b1220;
+  color: var(--text);
+  font-weight: 600;
+}
+
 .layout {
   display: grid;
   grid-template-columns: 1fr;
   gap: 18px;
   margin-top: 22px;
+}
+
+.tabs {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.tab-button {
+  border: 1px solid var(--outline);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.tab-button.active {
+  background: linear-gradient(135deg, var(--accent-2), #16a34a);
+  border-color: transparent;
+  color: #fff;
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
 }
 
 .board-shell {
@@ -172,6 +226,23 @@ input[type="range"] {
 .cell.highlight {
   outline: 2px solid rgba(34, 197, 94, 0.75);
   box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18);
+}
+
+.cell.selectable {
+  cursor: pointer;
+}
+
+.cell.selected {
+  outline: 2px solid rgba(124, 58, 237, 0.9);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.22);
+}
+
+.cell.target {
+  outline: 2px dashed rgba(59, 130, 246, 0.8);
+}
+
+.cell.arrow-target {
+  outline: 2px dashed rgba(245, 158, 11, 0.9);
 }
 
 .piece {
@@ -231,6 +302,41 @@ input[type="range"] {
 .hint {
   font-size: 13px;
   color: var(--muted);
+}
+
+.stats-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-top: 14px;
+  align-items: end;
+}
+
+.stats-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.stats-output {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--outline);
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 26px;
+  font-weight: 700;
+  margin: 6px 0 4px;
 }
 
 @media (max-width: 960px) {
